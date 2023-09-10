@@ -15,8 +15,8 @@
   "main": "./extension.js",
   "contributes": {
     "commands": [{
-      "command": "scalene.helloWorld",
-      "title": "Profile with Scalene, an AI-powered CPU+GPU+memory profiler for Python"
+      "command": "scalene.profile",
+      "title": "Scalene: Profile your Python code"
     }]
   },
   "scripts": {

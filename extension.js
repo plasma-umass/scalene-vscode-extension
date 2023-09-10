@@ -6,6 +6,24 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 
+function getPythonPath() {
+    const pythonExtension = vscode.extensions.getExtension('ms-python.python');
+    if (pythonExtension) {
+        // Ensure the extension is activated
+        const api = pythonExtension.isActive ? pythonExtension.exports : null;
+        if (api) {
+            // Get the selected interpreter
+            const pythonPath = api.settings.getExecutionDetails().execPath;
+            return pythonPath;
+        }
+    }
+    return null;
+}
+
+//const pythonInterpreterPath = getPythonPath();
+//console.log(pythonInterpreterPath);
+
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 
@@ -24,7 +42,7 @@ function runScalene(currentFilePath) {
 	const outputFilename = `${tempDir}/profile-${process.pid}.html`;
 	
 	const executablePath = 'python3.11';
-	const args = ['-m', 'scalene', '--no-browser', '--outfile', outputFilename, '---', currentFilePath];  // replace with your arguments
+	const args = ['-m', 'scalene', '--cpu', '--no-browser', '--outfile', outputFilename, '---', currentFilePath];  // replace with your arguments
 	const proc = child_process.spawn(executablePath, args);
 	
 	if (false) { // disabled for now
@@ -39,21 +57,21 @@ function runScalene(currentFilePath) {
 
 	proc.on('close', (code) => {
 		if (code !== 0) {
-			vscode.window.showErrorMessage(`Scalene: Process exited with code: ${code}`);
+			vscode.window.showErrorMessage(`Scalene: process exited with code: ${code}`);
 		} else {
-			vscode.window.showInformationMessage(`Scalene: profiling complete`);
+			vscode.window.showInformationMessage(`Scalene: profiling complete for ${currentFilePath}`);
 			const panel = vscode.window.createWebviewPanel(
 				'scaleneView', 
-				outputFilename,
+				// outputFilename,
+				`Scalene: ${currentFilePath}`,
 				vscode.ViewColumn.One,
 				{ 	enableScripts: true,
-					retainContextWhenHidden: true,
+					enableCommandUris: true,
 					allowSameOriginForContent: true,
 					//localResourceRoots: [vscode.Uri.file(path.join(__dirname, 'media'))]
+					retainContextWhenHidden: true, // This will ensure WebView is not reset when hidden.
 				 }
 			);
-	
-			//let htmlPath = path.join(context.extensionPath, outputFilename);
 			let content = fs.readFileSync(outputFilename, 'utf-8');
 			panel.webview.html = content;
 		}
@@ -66,35 +84,25 @@ function runScalene(currentFilePath) {
  */
 function activate(context) {
 
-	const currentEditor = vscode.window.activeTextEditor;
-    let currentFilePath = "";
-
-	if (currentEditor) {
-    	currentFilePath = currentEditor.document.uri.fsPath;
-    	console.log(currentFilePath);
-	} else {
-		console.log("Not editing a file.");
-	}
-
-	// Check whether the file ends in ".py"
-	let isPython = currentFilePath.endsWith(".py");
-
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Scalene is now active.');
-
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with  registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('scalene.helloWorld', function () {
-		// The code you place here will be executed every time your command is executed
-
+	let disposable = vscode.commands.registerCommand('scalene.profile', function () {
+		const currentEditor = vscode.window.activeTextEditor;
+		let currentFilePath = "";
+	
+		if (currentEditor) {
+			currentFilePath = currentEditor.document.uri.fsPath;
+		} else {
+			return;
+		}
+	
+		// Check whether the file ends in ".py"
+		let isPython = currentFilePath.endsWith(".py");
+	
 		// Display a message box to the user
 		if (isPython) {
 //			vscode.window.showInformationMessage('Scalene: Now profiling ' + currentFilePath);
 			runScalene(currentFilePath);	
 		} else {
-			vscode.window.showInformationMessage('Scalene: Not a Python file.');
+			vscode.window.showInformationMessage('Scalene: not a Python file.');
 		}
 
 	});
