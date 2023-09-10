@@ -1,0 +1,37 @@
+{
+  "name": "scalene",
+  "displayName": "Scalene: An AI-powered CPU+GPU+memory profiler for Python",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:extension.scaleneView"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [{
+      "command": "scalene.helloWorld",
+      "title": "Profile with Scalene, an AI-powered CPU+GPU+memory profiler for Python"
+    }]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "node ./test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.82.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "16.x",
+    "eslint": "^8.47.0",
+    "glob": "^10.3.3",
+    "mocha": "^10.2.0",
+    "typescript": "^5.1.6",
+    "@vscode/test-electron": "^2.3.4"
+  }
+}
