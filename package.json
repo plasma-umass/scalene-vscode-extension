@@ -5,6 +5,9 @@
     "version": "0.0.1",
     "repository": "https://github.com/plasma-umass/scalene-vscode-extension",
     "publisher": "EmeryBerger",
+    "sponsor": {
+	"url": "https://github.com/sponsors/emeryberger"
+    }
   "engines": {
     "vscode": "^1.82.0"
   },
