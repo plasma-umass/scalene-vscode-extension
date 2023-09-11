@@ -4,6 +4,7 @@
   "description": "Scalene: An AI-powered CPU+GPU+memory profiler for Python",
     "version": "0.0.1",
     "repository": "https://github.com/plasma-umass/scalene-vscode-extension",
+    "publisher": "EmeryBerger",
   "engines": {
     "vscode": "^1.82.0"
   },
