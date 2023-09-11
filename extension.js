@@ -33,7 +33,8 @@ function getPythonPath() {
  */
 
 function runScalene(currentFilePath) {
-	vscode.window.showInformationMessage('Scalene: now profiling ' + currentFilePath);
+	const dismissButton = { title: "Dismiss" };
+	vscode.window.showInformationMessage('Scalene: now profiling ' + currentFilePath, dismissButton);
 
 	// Create a unique temp directory for our extension
 	const tempDir = path.join(os.tmpdir(), 'scalene_' + Date.now());
@@ -42,9 +43,18 @@ function runScalene(currentFilePath) {
 	const outputFilename = `${tempDir}/profile-${process.pid}.html`;
 	
 	const executablePath = 'python3.11';
-	const args = ['-m', 'scalene', '--cpu', '--no-browser', '--outfile', outputFilename, '---', currentFilePath];  // replace with your arguments
+	const args = ['-m', 'scalene', '--no-browser', '--outfile', outputFilename, '---', currentFilePath];  // replace with your arguments
 	const proc = child_process.spawn(executablePath, args);
-	
+
+	// Redirect stdout to the Output pane ("channel")
+	const outputChannel = vscode.window.createOutputChannel("Output");
+	// Show the output pane to the user
+	outputChannel.show();
+
+	proc.stdout.on('data', (data) => {
+		outputChannel.appendLine(`${data}`);
+	});
+
 	if (false) { // disabled for now
 		proc.stdout.on('data', (data) => {
 			vscode.window.showInformationMessage(`STDOUT: ${data}`);
@@ -56,10 +66,11 @@ function runScalene(currentFilePath) {
 	}
 
 	proc.on('close', (code) => {
+		const dismissButton = { title: "Dismiss" };
 		if (code !== 0) {
 			vscode.window.showErrorMessage(`Scalene: process exited with code: ${code}`);
 		} else {
-			vscode.window.showInformationMessage(`Scalene: profiling complete for ${currentFilePath}`);
+			// vscode.window.showInformationMessage(`Scalene: done profiling ${currentFilePath}`, dismissButton);
 			const panel = vscode.window.createWebviewPanel(
 				'scaleneView', 
 				// outputFilename,
@@ -102,7 +113,7 @@ function activate(context) {
 //			vscode.window.showInformationMessage('Scalene: Now profiling ' + currentFilePath);
 			runScalene(currentFilePath);	
 		} else {
-			vscode.window.showInformationMessage('Scalene: not a Python file.');
+			vscode.window.showInformationMessage(`Scalene: ${currentFilePath} is not a Python file.`);
 		}
 
 	});
