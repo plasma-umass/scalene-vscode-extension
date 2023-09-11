@@ -6,26 +6,41 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 
-function getPythonPath() {
+async function getBestPythonPath() {
+    // Check if Python extension is installed and active
     const pythonExtension = vscode.extensions.getExtension('ms-python.python');
-    if (pythonExtension) {
-        // Ensure the extension is activated
-        const api = pythonExtension.isActive ? pythonExtension.exports : null;
-        if (api) {
-            // Get the selected interpreter
-            const pythonPath = api.settings.getExecutionDetails().execPath;
-            return pythonPath;
+    
+    if (pythonExtension && pythonExtension.isActive) {
+        const pythonConfig = vscode.workspace.getConfiguration('python');
+        const pythonPathFromExtension = pythonConfig.get('pythonPath');
+
+        if (pythonPathFromExtension) {
+            return pythonPathFromExtension;
         }
     }
-    return null;
+
+    // Fallback to using the environment
+    try {
+        const platform = process.platform;
+
+        if (platform === 'win32') {
+            // On Windows, use 'where'
+            const pythonPath = child_process.execSync('where python').toString().split('\r\n')[0];
+            if (pythonPath.includes('Python3') || pythonPath.includes('python3')) {
+                return pythonPath;
+            }
+        } else {
+            // On Linux/Mac, use 'which'
+            const pythonPath = child_process.execSync('which python3').toString().trim();
+            return pythonPath;
+        }
+    } catch (error) {
+        console.error('Error finding Python path:', error);
+    }
+
+    // If everything fails, return a default (this might not always be accurate)
+    return 'python3';
 }
-
-//const pythonInterpreterPath = getPythonPath();
-//console.log(pythonInterpreterPath);
-
-
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 
 /**
  * 
@@ -41,8 +56,13 @@ function runScalene(currentFilePath) {
 	fs.mkdirSync(tempDir);
 
 	const outputFilename = `${tempDir}/profile-${process.pid}.html`;
-	
-	const executablePath = 'python3.11';
+
+    let executablePath = 'python3';
+    
+    (async () => {
+	executablePath = await getBestPythonPath();
+    })();
+    
 	const args = ['-m', 'scalene', '--no-browser', '--outfile', outputFilename, '---', currentFilePath];  // replace with your arguments
 	const proc = child_process.spawn(executablePath, args);
 
@@ -80,11 +100,12 @@ function runScalene(currentFilePath) {
 					enableCommandUris: true,
 					allowSameOriginForContent: true,
 					//localResourceRoots: [vscode.Uri.file(path.join(__dirname, 'media'))]
-					retainContextWhenHidden: true, // This will ensure WebView is not reset when hidden.
+					//retainContextWhenHidden: true, // This will ensure WebView is not reset when hidden.
 				 }
 			);
-			let content = fs.readFileSync(outputFilename, 'utf-8');
-			panel.webview.html = content;
+		    // outputChannel.appendLine(outputFilename);
+		    let content = fs.readFileSync(outputFilename, 'utf-8');
+		    panel.webview.html = content;
 		}
 	});
 	
