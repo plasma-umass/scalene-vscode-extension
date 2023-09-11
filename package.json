@@ -2,12 +2,13 @@
   "name": "scalene",
   "displayName": "Scalene",
   "description": "Scalene: An AI-powered CPU+GPU+memory profiler for Python",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "repository": "https://github.com/plasma-umass/scalene-vscode-extension",
     "publisher": "EmeryBerger",
     "sponsor": {
 	"url": "https://github.com/sponsors/emeryberger"
     },
+    "icon" : "./scalene-icon.png",
   "engines": {
     "vscode": "^1.82.0"
   },
