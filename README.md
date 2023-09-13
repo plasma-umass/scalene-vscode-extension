@@ -1,4 +1,4 @@
-![scalene](https://github.com/plasma-umass/scalene/raw/master/docs/scalene-image-white.png)
+![scalene](scalene-icon-white.png)
 
 # Scalene: a Python CPU+GPU+memory profiler with AI-powered optimization proposals
 
