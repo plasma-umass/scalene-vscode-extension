@@ -13,7 +13,8 @@
     "vscode": "^1.82.0"
   },
   "categories": [
-    "Other"
+      "Programming Languages",
+      "Debuggers"
   ],
   "activationEvents": [
     "onCommand:extension.scaleneView"
@@ -22,7 +23,7 @@
   "contributes": {
     "commands": [{
       "command": "scalene.profile",
-      "title": "Scalene: Profile your Python code"
+      "title": "Scalene: AI-powered profiling for Python"
     }]
   },
   "scripts": {
