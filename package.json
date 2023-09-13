@@ -14,7 +14,15 @@
   },
   "categories": [
       "Programming Languages",
-      "Debuggers"
+      "Debuggers",
+      "Machine Learning"
+  ],
+  "keywords": [
+      "profiler",
+      "Python",
+      "memory",
+      "CPU",
+      "GPU"
   ],
   "activationEvents": [
     "onCommand:extension.scaleneView"
