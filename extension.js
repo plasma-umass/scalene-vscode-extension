@@ -6,7 +6,7 @@ const path = require("path");
 const os = require("os");
 const fs = require("fs");
 
-async function getBestPythonPath() {
+function getBestPythonPath() {
   // Check if Python extension is installed and active
   const pythonExtension = vscode.extensions.getExtension("ms-python.python");
 
@@ -16,6 +16,11 @@ async function getBestPythonPath() {
 
     if (pythonPathFromExtension) {
       return pythonPathFromExtension;
+    }
+
+    if (pythonExtension.exports.settings.getExecutionDetails) {
+      const pythonPathFromActiveDocument = pythonExtension.exports.settings.getExecutionDetails(vscode.window.activeTextEditor.document.uri).execCommand[0];
+      return pythonPathFromActiveDocument;
     }
   }
 
@@ -65,13 +70,7 @@ function runScalene(currentFilePath, context) {
   fs.mkdirSync(tempDir);
 
   const outputFilename = `${tempDir}/profile-${process.pid}.html`;
-
-  let executablePath = "python3";
-
-  (async () => {
-    executablePath = await getBestPythonPath();
-  })();
-
+  const executablePath = getBestPythonPath();
   const args = [
     "-m",
     "scalene",
