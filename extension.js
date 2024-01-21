@@ -75,6 +75,7 @@ function runScalene(currentFilePath, context) {
     "-m",
     "scalene",
     "--no-browser",
+    "--html",
     "--outfile",
     outputFilename,
     "---",
