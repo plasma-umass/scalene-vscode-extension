@@ -79,7 +79,7 @@ function runScalene(currentFilePath, context) {
     outputFilename,
     "---",
     currentFilePath,
-  ]; // replace with your arguments
+  ];
   const proc = child_process.spawn(executablePath, args);
 
   // Redirect stdout to the Output pane ("channel")
