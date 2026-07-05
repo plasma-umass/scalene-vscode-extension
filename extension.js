@@ -69,48 +69,112 @@ function runScalene(currentFilePath, context) {
   const tempDir = path.join(os.tmpdir(), "scalene_" + Date.now());
   fs.mkdirSync(tempDir);
 
-  const outputFilename = `${tempDir}/profile-${process.pid}.html`;
+  // As of Scalene 2.x, the CLI is verb-based: `scalene run ...` profiles a
+  // program (emitting a JSON profile) and `scalene view ...` renders it. The
+  // old flat form (`scalene --no-browser --outfile foo.html --- prog.py`) now
+  // fails with exit code 1, which was the root cause of the "process exited
+  // with code" errors reported by users.
+  const jsonFilename = path.join(tempDir, "profile.json");
+  const htmlFilename = path.join(tempDir, "scalene-profile.html");
   const executablePath = getBestPythonPath();
-  const args = [
+
+  // Run the profiler with the workspace folder (falling back to the file's own
+  // directory) as the working directory, so that imports of sibling/parent
+  // modules resolve the same way "Run and Debug" resolves them.
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(
+    vscode.Uri.file(currentFilePath),
+  );
+  const cwd =
+    (workspaceFolder && workspaceFolder.uri.fsPath) ||
+    path.dirname(currentFilePath);
+
+  const runArgs = [
     "-m",
     "scalene",
-    "--no-browser",
+    "run",
     "--outfile",
-    outputFilename,
+    jsonFilename,
     "---",
     currentFilePath,
   ];
-  const proc = child_process.spawn(executablePath, args);
 
   // Redirect stdout to the Output pane ("channel")
-  const outputChannel = vscode.window.createOutputChannel("Output");
+  const outputChannel = vscode.window.createOutputChannel("Scalene");
   // Show the output pane to the user
   outputChannel.show();
+
+  const proc = child_process.spawn(executablePath, runArgs, { cwd });
+
+  // Surface failures to spawn the interpreter itself (e.g. exit code 127 when
+  // the selected Python path is wrong or Scalene is not installed).
+  proc.on("error", (err) => {
+    vscode.window.showErrorMessage(
+      `Scalene: could not run '${executablePath}': ${err.message}. ` +
+        `Check the selected Python interpreter and that Scalene is installed ` +
+        `(pip install -U scalene).`,
+    );
+  });
 
   proc.stdout.on("data", (data) => {
     outputChannel.appendLine(`${data}`);
   });
 
-  if (false) {
-    // disabled for now
-    proc.stdout.on("data", (data) => {
-      vscode.window.showInformationMessage(`STDOUT: ${data}`);
-    });
-
-    proc.stderr.on("data", (data) => {
-      vscode.window.showWarningMessage(`STDERR: ${data}`);
-    });
-  }
+  proc.stderr.on("data", (data) => {
+    outputChannel.appendLine(`${data}`);
+  });
 
   let panel;
 
   proc.on("close", (code) => {
     if (code !== 0) {
       vscode.window.showErrorMessage(
-        `Scalene: process exited with code: ${code}`,
+        `Scalene: process exited with code: ${code}. See the "Scalene" ` +
+          `output pane for details.`,
       );
       return;
     }
+
+    // Render the JSON profile into a self-contained HTML file. `scalene view`
+    // writes "scalene-profile.html" into its working directory, so run it with
+    // cwd set to our temp directory.
+    const viewArgs = [
+      "-m",
+      "scalene",
+      "view",
+      "--standalone",
+      jsonFilename,
+    ];
+    const viewProc = child_process.spawn(executablePath, viewArgs, {
+      cwd: tempDir,
+    });
+
+    viewProc.on("error", (err) => {
+      vscode.window.showErrorMessage(
+        `Scalene: could not render profile: ${err.message}`,
+      );
+    });
+
+    viewProc.stdout.on("data", (data) => {
+      outputChannel.appendLine(`${data}`);
+    });
+
+    viewProc.stderr.on("data", (data) => {
+      outputChannel.appendLine(`${data}`);
+    });
+
+    viewProc.on("close", (viewCode) => {
+      if (viewCode !== 0 || !fs.existsSync(htmlFilename)) {
+        vscode.window.showErrorMessage(
+          `Scalene: failed to render profile (exit code ${viewCode}). ` +
+            `See the "Scalene" output pane for details.`,
+        );
+        return;
+      }
+      showProfile();
+    });
+  });
+
+  function showProfile() {
     panel = vscode.window.createWebviewPanel(
       "scaleneView",
       // outputFilename,
@@ -150,10 +214,9 @@ function runScalene(currentFilePath, context) {
         context.subscriptions,
       ),
     );
-    // outputChannel.appendLine(outputFilename);
-    let content = fs.readFileSync(outputFilename, "utf-8");
+    let content = fs.readFileSync(htmlFilename, "utf-8");
     panel.webview.html = content;
-  });
+  }
 }
 
 /**
