@@ -15,6 +15,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
   message instead of failing silently (issue #8), and stream stderr to the
   "Scalene" output pane.
 - Fix stale `activationEvents` entry that referenced a non-existent command.
+- Detect a missing Scalene install or missing dependency (e.g. `pydantic`) in
+  the selected interpreter and show an actionable message naming that
+  interpreter and the exact `pip install -U scalene` command to run, instead of
+  surfacing a raw `ModuleNotFoundError`.
 
 ## [Unreleased]
 

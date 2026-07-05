@@ -119,7 +119,12 @@ function runScalene(currentFilePath, context) {
     outputChannel.appendLine(`${data}`);
   });
 
+  // Accumulate stderr so that, on failure, we can detect common causes such as
+  // a missing Scalene install or a missing dependency (e.g. pydantic) and give
+  // an actionable message that names the interpreter to fix.
+  let stderrBuffer = "";
   proc.stderr.on("data", (data) => {
+    stderrBuffer += data;
     outputChannel.appendLine(`${data}`);
   });
 
@@ -127,6 +132,20 @@ function runScalene(currentFilePath, context) {
 
   proc.on("close", (code) => {
     if (code !== 0) {
+      // A missing module means Scalene (or one of its dependencies) is not
+      // installed in the *selected* interpreter, which is often a virtualenv
+      // distinct from the system Python. Point the user at the exact fix.
+      const missingModule = stderrBuffer.match(/No module named '([^']+)'/);
+      if (missingModule) {
+        const mod = missingModule[1];
+        const pkg = mod === "scalene" ? "scalene" : `scalene (which requires ${mod})`;
+        vscode.window.showErrorMessage(
+          `Scalene: '${mod}' is not installed in the selected Python ` +
+            `interpreter ('${executablePath}'). Install ${pkg} there, e.g.:  ` +
+            `"${executablePath}" -m pip install -U scalene`,
+        );
+        return;
+      }
       vscode.window.showErrorMessage(
         `Scalene: process exited with code: ${code}. See the "Scalene" ` +
           `output pane for details.`,
